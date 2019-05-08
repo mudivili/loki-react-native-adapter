@@ -1,22 +1,28 @@
+import { FileSystem } from 'expo';
+
 function LokiReactNativeAdapter() {
-  this.fs = require('react-native-fs');
+
 }
 
 LokiReactNativeAdapter.prototype.loadDatabase = function loadDatabase(dbname, callback) {
   var self = this;
 
-  var dbpath = this.fs.DocumentDirectoryPath + '/' + dbname;
-  self.fs.stat(dbpath).then(stats=>{
-    if (stats.isFile()){
-      self.fs.readFile(dbpath, {
-        encoding: 'utf8'
-      }).then(data=>{
+  var dbpath = FileSystem.documentDirectory + '/' + dbname;
+
+  FileSystem.getInfoAsync(dbpath)
+
+  self.fs.stat(dbpath).then(stats => {
+    if (stats.isDirectory === false) {
+      return FileSystem.readAsStringAsync(dbpath, {
+        encoding: FileSystem.EncodingTypes.UTF8
+      }).then(data => {
         callback(data)
-      }).catch(err=>{
+      }).catch(err => {
         callback(new Error(err));
       })
     }
-  }).catch(err=>{
+    callback(dbpath + ' is not file');
+  }).catch(err => {
     callback(err)
   })
 };
@@ -31,12 +37,14 @@ LokiReactNativeAdapter.prototype.loadDatabase = function loadDatabase(dbname, ca
 
 
 LokiReactNativeAdapter.prototype.saveDatabase = function saveDatabase(dbname, dbstring, callback) {
-  var self = this;
-  var dbpath = this.fs.DocumentDirectoryPath + '/' + dbname;
-  this.fs.writeFile(dbpath,dbstring)
-  .catch(err=>{
-    callback(err)
-  })
+
+  var dbpath = FileSystem.DocumentDirectoryPath + '/' + dbname;
+  FileSystem.writeAsStringAsync(dbpath, dbstring).then(() => {
+    callback();
+  }, callback)
+    .catch(err => {
+      callback(err);
+    });
 };
 
 /**
@@ -48,11 +56,11 @@ LokiReactNativeAdapter.prototype.saveDatabase = function saveDatabase(dbname, db
  */
 
 LokiReactNativeAdapter.prototype.deleteDatabase = function deleteDatabase(dbname, callback) {
-  var dbpath = this.fs.DocumentDirectoryPath + '/' + dbname;
-  this.fs.unlink(dbpath).then(()=>{
-    callback()
-  }).catch(err=>{
-    callback(err)
+  var dbpath = FileSystem.DocumentDirectoryPath + '/' + dbname;
+  FileSystem.deleteAsync(dbpath).then(() => {
+    callback();
+  }).catch(err => {
+    callback(err);
   })
 };
 
